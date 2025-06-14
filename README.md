@@ -1,4 +1,4 @@
-# Tapo Device Controller
+# IOT Device Controller
 
 A Node.js script to discover and control TP-Link Tapo smart devices using their local API with Lodash utilities and command-line filtering.
 
