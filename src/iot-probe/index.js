@@ -2,15 +2,25 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { getDirname } from '../utils/index.js';
+import { getDirnameFromFile, deleteAllFilesInDirectory } from '../utils/index.js';
 
 export default class IotProbe {
   constructor(options = {}) {
     //because we cant call __dirname in json
-    const cacheFile =  path.join(getDirname(import.meta.url), options.cacheFile);
+    
+    let cacheFile;
+    
+    if (options.cacheFile) {
+      const thisDir = getDirnameFromFile(import.meta.url);
+      cacheFile = path.join(thisDir, options.cacheFile);
+      if (options.clearCache) {
+        const cacheDir = getDirnameFromFile(cacheFile);
+        deleteAllFilesInDirectory(cacheDir).then(() =>{});
+      }
+    }
+
     delete options.cacheFile;
-    console.log({options, cacheFile});
-    // Default configuration
+    
     this.config = {
       networkPrefix: '192.168.1',
       timeoutMs: 2000,
@@ -21,7 +31,7 @@ export default class IotProbe {
       ...options
     };
 
-    console.log(this.config);
+    console.log({options, cacheFile, config: this.config});
     // Bind methods
     this.scan = this.scan.bind(this);
   }

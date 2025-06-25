@@ -1,9 +1,9 @@
 import _ from 'lodash';
-import { loginDeviceByIp } from 'tp-link-tapo-connect';
 import getopt from 'node-getopt';
 import IotProbe from './iot-probe/index.js';
-import { sleep, Logger, loadJson, getDirname} from './utils/index.js';
-const rootConfig = await loadJson(getDirname(import.meta.url) + '/../config.json');
+import { sleep, Logger, loadJson, getDirnameFromFile} from './utils/index.js';
+import { getDeviceInfo, shouldProcessDevice } from './index.js';
+const rootConfig = await loadJson(getDirnameFromFile(import.meta.url) + '/../config.json');
 
 // Command line options configuration
 const opt = getopt.create([
@@ -24,29 +24,10 @@ const { email, password } = _.get(rootConfig, 'tapo', {});
 const SCAN_CACHE = true;
 const DELAY_MS = 2000;
 
-// Device info processing with Lodash
-const normalizeDeviceInfo = (deviceInfo, ip) => ({
-  ...deviceInfo,
-  ip,
-  nickname: _.chain(deviceInfo)
-    .thru(info => _.get(info, 'nickname') || 
-                  _.get(info, 'deviceInfo.nickname') || 
-                  _.get(info, 'result.nickname') ||
-                  'Unknown')
-    .trim()
-    .value()
-});
-
-// Predicate functions with Lodash
-const shouldProcessDevice = (deviceInfo, filter) => 
-  !filter || _.includes(_.toLower(deviceInfo.nickname), _.toLower(filter));
-
 const processDevice = _.memoize(async (ip) => {
   try {
     logger.info(`Connecting to device at ${ip}...`);
-    const device = await loginDeviceByIp(email, password, ip);
-    const rawInfo = await device.getDeviceInfo();
-    const deviceInfo = normalizeDeviceInfo(rawInfo, ip);
+    const deviceInfo = await getDeviceInfo({email, password}, ip);
     
     logger.info(`Device ${ip} nickname: "${deviceInfo.nickname}"`);
     

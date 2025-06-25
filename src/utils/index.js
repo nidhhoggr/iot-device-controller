@@ -1,8 +1,7 @@
 import _ from "lodash";
-import { readFile } from 'fs/promises';
+import { readFile, unlink, lstat, readdir } from 'fs/promises';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
+import { dirname, join } from 'path';
 
 export const sleep = async (wait) => {
   return new Promise(resolve => {
@@ -27,7 +26,31 @@ export const loadJson = async (jsonFilePath) => {
   return JSON.parse(configFile);
 }
 
-export const getDirname = (fileUrl) => {
-  const __filename = fileURLToPath(fileUrl);
-  return dirname(__filename);
+export const getDirnameFromFile = (fileUrl) => {
+  try {
+    const __filename = fileURLToPath(fileUrl);
+    return dirname(__filename);
+  } catch(err) {
+    console.error(`fileUrl provided threw an error: ${fileUrl}`);
+    return dirname(fileUrl);
+  }
+}
+
+export const deleteAllFilesInDirectory = async (directoryPath) => {
+  try {
+    const files = await readdir(directoryPath); // Read the contents of the directory
+
+    for (const file of files) {
+      const filePath = join(directoryPath, file); // Construct the full path to the file
+      const stats = await lstat(filePath); // Get file statistics to check if it's a file or directory
+
+      if (stats.isFile()) {
+        await unlink(filePath); // Delete the file if it's a regular file
+        console.log(`Deleted file: ${filePath}`);
+      }
+    }
+    console.log(`All files in ${directoryPath} have been deleted.`);
+  } catch (err) {
+    console.error(`Error deleting files in directory: ${err}`);
+  }
 }
